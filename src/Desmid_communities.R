@@ -5,6 +5,7 @@ library("dplyr")
 library("ggvegan")
 library("viridis")
 library("wesanderson")
+library("ggforce")
 
 original_data_set <- read.csv("data/desmid_data_set.csv", row.names = 1)
 species_abundances <- original_data_set[ , 1:243]
@@ -190,7 +191,7 @@ site.names <- c("Osgood", "Grassy","Casalis", "King","May","Mill","North","Bear"
 ord_df<-data.frame(Site=site.names,CCA1=cca.sites$CCA1,CCA2=cca.sites$CCA2)
 ord_df$pH <- environmental_variables_cca2$pH
 
-ord_df$hab <-habitat
+ord_df$Habitat <-habitat
 #row.names(ord_df) <- site.names
 
 cca.species<-data.frame(cca.res$species)
@@ -208,7 +209,7 @@ ggplot(ord_df) +
   geom_segment(data = cca.env,
                aes(x = 0, xend = cca1, y = 0, yend = cca2),
                arrow = arrow(length = unit(0.5, "cm")), size=1, colour = "grey") +
-  geom_point(mapping = aes(x=CCA1, y=CCA2, color=hab),size = 7)+
+  geom_point(mapping = aes(x=CCA1, y=CCA2, color=Habitat),size = 7)+
   geom_text(aes(x=CCA1, y=CCA2, label = Site),
             size = 6,, nudge_x = 0.2, nudge_y = 0.1, colour = "#808080") +
   geom_text(data = cca.env, 
@@ -222,8 +223,55 @@ ggplot(ord_df) +
   labs(x = "CCA1",
        y = "CCA2")
 
+
 #https://rpubs.com/Roeland-KINDT/694021 more plotting options
+# https://rstudio-pubs-static.s3.amazonaws.com/694016_e2d53d65858d4a1985616fa3855d237f.html
 #library("BiodiversityR") # has weird dependencies on mac
-#plot1 <- ordiplot(ccamodel_species_subset, choices=c(1,2)) 
-#sites.long1 <- sites.long(plot1, env.data=environmental_variables_cca2)
-#head(sites.long1)
+# but some graphing works well with ggforce
+
+# this theme lacks the grey background which can be nice for visibility
+BioR.theme <- theme(
+  panel.background = element_blank(),
+  panel.border = element_blank(),
+  panel.grid = element_blank(),
+  axis.line = element_line("gray25"),
+  text = element_text(size = 12),
+  axis.text = element_text(size = 12, colour = "gray25"),
+  axis.title = element_text(size = 14, colour = "gray25"),
+  legend.title = element_text(size = 14),
+  legend.text = element_text(size = 14),
+  legend.key = element_blank())
+
+# there is only one HSF site (highland spruce forest), 4th CT Lake. 
+# It is not that much higher in elevation than others
+# merging it with LSF, which are nearby
+ord_df2 <- ord_df
+ord_df2$Habitat[ord_df2$Habitat == 'HSF'] <- 'SF'
+ord_df2$Habitat[ord_df2$Habitat == 'LSF'] <- 'SF'
+
+plotgg2 <- ggplot(ord_df2) + 
+  geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
+  geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +
+  scale_color_manual(values= wes_palette("GrandBudapest1", n = 4)) +
+  geom_segment(data = cca.env,
+               aes(x = 0, xend = cca1, y = 0, yend = cca2),
+               arrow = arrow(length = unit(0.5, "cm")), size=1, colour = "grey") +
+  geom_point(mapping = aes(x=CCA1, y=CCA2, color=Habitat),size = 7)+
+  geom_text(aes(x=CCA1, y=CCA2, label = Site),
+            size = 6,, nudge_x = 0.2, nudge_y = 0.1, colour = "#808080") +
+  geom_text(data = cca.env, 
+            aes(x = cca1*1.2, y = cca2*1.2, label = Species),
+            size = 6) +
+  labs(x = "CCA1",
+       y = "CCA2") +
+  geom_mark_ellipse(data=ord_df2, 
+                    aes(x=CCA1, y=CCA2, colour=Habitat, 
+                        fill=after_scale(alpha(colour, 0.2))), 
+                    expand=0, size=0.2, show.legend=FALSE) +
+ # geom_mark_hull(data=ord_df2, 
+  #               aes(x=CCA1, y=CCA2, colour=Habitat, 
+  #                   fill=after_scale(alpha(colour, 0.2))), 
+  #               concavity=0.1, size=0.2, show.legend=FALSE) +
+  BioR.theme
+  
+  plotgg2

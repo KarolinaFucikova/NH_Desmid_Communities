@@ -56,6 +56,14 @@ rarecurve(species_abundances[1:12,], step = 20, sample = raremax, col = "blue", 
 species_rel_abundances <- make_relative(as.matrix(species_abundances))
 species_rel_abundances <- as.data.frame(species_rel_abundances)
 
+#these data can be used to get a dendrogram of site similarities
+# using Bray-Curtis distances
+BCdis_species <- vegdist(species_rel_abundances, method = "bray")
+BCdis_species
+#create a dendrogram from the Bray-Curtis dissimilarity values
+BCdis_species_hc <- hclust(BCdis_species) 
+plot(BCdis_species_hc)
+
 #calculate the genera abundances from the original data set
 #find the abundances of each genera at the sites. 
 Penium <- rowSums(species_abundances%>% 
